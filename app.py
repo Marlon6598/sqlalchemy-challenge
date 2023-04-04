@@ -14,14 +14,14 @@ from flask import Flask, jsonify
 engine = create_engine("sqlite:///Resources/hawaii.sqlite")
 
 # reflect an existing database into a new model
-Base = automap_base()
+base = automap_base()
 # reflect the tables
-Base.prepare(autoload_with = engine, reflect = True)
+base.prepare(autoload_with = engine, reflect = True)
 
 # Save references to each table
-Base.classes.keys()
-measurement = Base.classes.measurement
-station = Base.classes.station
+base.classes.keys()
+measurement = base.classes.measurement
+station = base.classes.station
 
 # Create our session (link) from Python to the DB
 session = Session(engine)
@@ -63,25 +63,23 @@ def stations():
     session = Session(engine)
     station = session.query(station.station).all()
     
-    d = {k[0]:'' for k in station}
+    y = {x[0]:"" for x in station}
     session.close()
     
-    return jsonify(d)
+    return jsonify(y)
 
 @app.route("/api/v1.0/tobs")
 def most_active():
     session = Session(engine)
     most_active = session.query(measurement.station, func.count(measurement.station)).\
-              group_by(measurement.station).\
-              order_by(func.count(measurement.station).desc()).all()
+                group_by(measurement.station).order_by(func.count(measurement.station).desc()).all()
     print(most_active)
     session.close()
 
     most_active_station = most_active[0][0]
     
     temps_last_year = session.query(measurement.tobs).\
-                      filter(measurement.station == most_active_station).\
-                      filter(measurement.date >= '2016-08-23').all()
+                    filter(measurement.station == most_active_station).filter(measurement.date >= '2016-08-23').all()
 
     temps_list = list(np.ravel(temps_last_year))
     return jsonify(temps_list)
@@ -100,11 +98,11 @@ def min_max_avg(start, end = None):
     session.close()
 
     all_temps = []
-    for min_temp, avg_temp, max_temp in results:
+    for min_temp, max_temp, avg_temp in results:
         temp_dict = {}
         temp_dict['min_temp'] = min_temp
-        temp_dict['avg_temp'] = avg_temp
         temp_dict['max_temp'] = max_temp
+        temp_dict['avg_temp'] = avg_temp
         all_temps.append(temp_dict)
 
     return jsonify(all_temps)
